@@ -13,6 +13,7 @@ notifications:
 before_script:
   - GO_FILES=$(find . -iname '*.go' | grep -v /vendor/)  # All the .go files, excluding vendor/ if any
   - PKGS=$(go list ./... | grep -v /vendor/)             # All the import paths, excluding vendor/ if any
+  - PLATFORMS=("386" "amd64" "arm" "arm64")
   - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh # Install latest dep release
   - go get github.com/rakyll/embedmd
 
@@ -22,6 +23,6 @@ script:
   - go build ./...                    # Ensure dependency updates don't break build
   - if [ -n "$(gofmt -s -l $GO_FILES)" ]; then echo "gofmt the following files:"; gofmt -s -l $GO_FILES; exit 1; fi
   - go vet ./...
-  - go test -v -race $PKGS            # Run all the tests with the race detector enabled
+  - for arch in ${PLATFORMS[*]}; do echo "# Tests for $arch platform"; GOOS=linux GOARCH=$arch go test -v $PKGS; done
   - 'if [[ $TRAVIS_GO_VERSION = 1.8* ]]; then ! golint ./... | grep -vE "(_mock|_string|\.pb)\.go:"; fi'
   - go run internal/check/version.go
